@@ -173,18 +173,28 @@ void parse_range_option(char *code, int total_line, unsigned long size){
 
 void get_head_sha1(unsigned char *sha1) {
     FILE *f;
-    char fileName[50];
-    char branch[50];
-    char hex[50];    
-
-    f = fopen(".git/HEAD","r");  
-    fscanf(f, "%*s%s", branch);
+    char branch[PATH_MAX+1];
+    char fileName[PATH_MAX+1];
+    char hex[100];    
+    int n;
+    f = fopen(".git/HEAD","r");
+    assert(f!=NULL);
+    n = fscanf(f, "%s%s", hex, branch);
     fclose(f);
 
-    sprintf(fileName, ".git/%s", branch);
-    f = fopen(fileName, "r");
-    fscanf(f, "%s", hex);
-
+    if (n == 2) {
+        // read the name of the file that contains the commit id
+        assert(strcmp(hex, "ref:") == 0);
+        sprintf(fileName, ".git/%s", branch);
+        f = fopen(fileName, "r");
+        assert(f!=NULL);
+        fscanf(f, "%s", hex);
+        fclose(f);
+    } else {
+        assert(n==1); // it should be 1, the hex of the commit id
+        // any other value is invalid
+    }
+    assert(strlen(hex) == 40);
     get_sha1_hex(hex, sha1);
 }
 
